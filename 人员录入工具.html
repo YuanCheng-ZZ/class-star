@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>班级之星 · 人员录入工具</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%234d8dff' d='M12 2l2.6 6.6L21 11l-6.4 2.4L12 20l-2.6-6.6L3 11l6.4-2.4z'/%3E%3C/svg%3E">
+<style>
+  :root{
+    --bg:#070d1c; --panel:#0e1a33; --panel2:#13234a; --line:rgba(120,160,255,.16);
+    --primary:#4d8dff; --accent:#7fb2ff; --text:#dce8ff; --dim:rgba(170,190,235,.62);
+    --ok:#4ade80; --warn:#fbbf24; --bad:#ff6b7a; --focus:rgba(77,141,255,.45);
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  html,body{height:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;
+    background:
+      radial-gradient(1200px 700px at 75% -10%, rgba(61,105,255,.16), transparent 60%),
+      radial-gradient(900px 600px at -10% 110%, rgba(42,80,190,.14), transparent 55%),
+      var(--bg);
+    color:var(--text); font-size:14px; line-height:1.5;
+    display:flex; flex-direction:column; min-height:100vh;
+  }
+  button{font:inherit; color:inherit; background:none; border:none; cursor:pointer}
+  input,select,textarea{font:inherit; color:var(--text); background:#0a1428; border:1px solid var(--line); border-radius:8px; padding:7px 10px; outline:none; width:100%}
+  input:focus,select:focus,textarea:focus{border-color:var(--primary); box-shadow:0 0 0 3px var(--focus)}
+  input[type="color"]{padding:2px; height:34px; cursor:pointer}
+  input[type="file"]{display:none}
+  ::placeholder{color:rgba(170,190,235,.4)}
+  .btn{
+    display:inline-flex; align-items:center; gap:6px; padding:7px 13px; border-radius:8px;
+    background:var(--panel2); border:1px solid var(--line); font-size:13px; white-space:nowrap;
+    transition:background .15s,border-color .15s;
+  }
+  .btn:hover{border-color:var(--primary); background:#16305e}
+  .btn.primary{background:linear-gradient(180deg,#5d9bff,#3f7df0); border-color:transparent; color:#fff; font-weight:600}
+  .btn.primary:hover{background:linear-gradient(180deg,#6da6ff,#4a85f5)}
+  .btn.danger:hover{border-color:var(--bad); color:var(--bad); background:rgba(255,107,122,.08)}
+  .btn.small{padding:3px 8px; font-size:12px; border-radius:6px}
+  .btn:disabled{opacity:.4; cursor:not-allowed}
+  .btn .ico{flex:none}
+  svg.ico{width:15px; height:15px; fill:currentColor; display:block}
+
+  /* ===== 顶栏 ===== */
+  header{
+    display:flex; align-items:center; gap:12px; padding:12px 18px; flex-wrap:wrap;
+    border-bottom:1px solid var(--line); background:linear-gradient(180deg, rgba(19,35,74,.55), transparent);
+  }
+  header .brand{display:flex; align-items:center; gap:10px; margin-right:auto}
+  header .brand .star{width:26px; height:26px; flex:none}
+  header h1{font-size:17px; font-weight:700; letter-spacing:.5px}
+  header .sub{font-size:12px; color:var(--dim); margin-top:1px}
+  .hgroup{display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+
+  /* ===== 主体 ===== */
+  main{flex:1; display:grid; grid-template-columns:minmax(300px, 380px) 1fr; gap:14px; padding:14px 18px; min-height:0}
+  .col{background:var(--panel); border:1px solid var(--line); border-radius:14px; display:flex; flex-direction:column; min-height:0; overflow:hidden}
+
+  /* ===== 左栏：列表 ===== */
+  #listCol .searchbar{padding:12px 12px 8px; display:flex; gap:8px; align-items:center}
+  #listCol .searchbar .wrap{position:relative; flex:1}
+  #listCol .searchbar svg{position:absolute; left:10px; top:50%; transform:translateY(-50%); width:14px; height:14px; fill:var(--dim); pointer-events:none}
+  #listCol .searchbar input{padding-left:30px}
+  #listMeta{font-size:12px; color:var(--dim); padding:2px 14px 10px}
+  #listMeta b{color:var(--accent); font-weight:600}
+  #list{flex:1; overflow-y:auto; padding:0 8px 8px; min-height:120px}
+  .item{
+    display:flex; align-items:center; gap:9px; padding:8px 9px; border-radius:10px; cursor:pointer;
+    border:1px solid transparent; transition:background .12s;
+  }
+  .item:hover{background:rgba(77,141,255,.1)}
+  .item.sel{background:rgba(77,141,255,.16); border-color:rgba(77,141,255,.35)}
+  .item.checked .rowStar{border-color:var(--accent)}
+  .item .star{width:20px; height:20px; flex:none; filter:drop-shadow(0 0 4px rgba(77,141,255,.55))}
+  .item .meta{flex:1; min-width:0}
+  .item .nm{font-size:13.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .item .rl{font-size:11px; color:var(--dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .item .mini{flex:none; display:flex; gap:2px; opacity:0; transition:opacity .12s}
+  .item:hover .mini{opacity:1}
+  .item .mini button{padding:3px; border-radius:6px}
+  .item .mini button:hover{background:rgba(255,255,255,.1); color:var(--accent)}
+  .item .mini button.del:hover{color:var(--bad)}
+  .chk{flex:none; width:17px; height:17px; border:1.5px solid rgba(170,190,235,.5); border-radius:5px; display:grid; place-items:center; transition:all .12s}
+  .item.checked .chk{background:var(--primary); border-color:var(--primary)}
+  .chk svg{width:11px; height:11px; fill:#fff; opacity:0}
+  .item.checked .chk svg{opacity:1}
+  .empty{padding:40px 20px; text-align:center; color:var(--dim); font-size:13px}
+  .empty svg{width:34px; height:34px; fill:rgba(170,190,235,.25); margin-bottom:8px}
+
+  .batchbar{padding:10px 12px; border-top:1px solid var(--line); display:flex; gap:7px; flex-wrap:wrap; align-items:center; background:rgba(10,20,40,.5)}
+  .batchbar .sp{flex:1}
+  .batchbar .count{font-size:12px; color:var(--dim)}
+  .confirmbar{padding:9px 12px; border-top:1px solid rgba(255,107,122,.4); background:rgba(255,107,122,.08); display:flex; gap:9px; align-items:center; font-size:13px}
+  .confirmbar .msg{flex:1}
+
+  /* ===== 右栏：编辑区 ===== */
+  #editCol{position:relative}
+  .editEmpty{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; color:var(--dim)}
+  .editEmpty svg{width:44px; height:44px; fill:rgba(170,190,235,.22)}
+  .editEmpty .t1{font-size:15px; color:rgba(170,190,235,.75)}
+  .editHead{display:flex; align-items:center; gap:12px; padding:14px 18px 10px; border-bottom:1px solid var(--line); flex-wrap:wrap}
+  .editHead .ap{width:56px; height:56px; border-radius:50%; overflow:hidden; flex:none; background:linear-gradient(135deg,#25447e,#12244a); display:grid; place-items:center; font-size:24px; font-weight:700; color:var(--accent); border:2px solid rgba(77,141,255,.5)}
+  .editHead .ap img{width:100%; height:100%; object-fit:cover; display:block}
+  .editHead .who{flex:1; min-width:0}
+  .editHead .who .nm{font-size:18px; font-weight:700}
+  .editHead .who .rl{font-size:12.5px; color:var(--dim)}
+  .editHead .ops{display:flex; gap:7px}
+  #editBody{padding:14px 18px 20px; overflow-y:auto; min-height:0}
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:12px 14px}
+  .fld label{display:block; font-size:12px; color:var(--dim); margin-bottom:5px}
+  .fld.req label::after{content:" *"; color:var(--bad)}
+  .fld.full{grid-column:1 / -1}
+  .avatarRow{display:flex; gap:10px; align-items:flex-start}
+  .avatarRow .ap-sm{width:64px; height:48px; border-radius:8px; overflow:hidden; flex:none; background:#0a1428; border:1px solid var(--line); display:grid; place-items:center; font-size:20px; color:var(--dim)}
+  .avatarRow .ap-sm img{width:100%; height:100%; object-fit:cover; display:block}
+  .avatarRow .w{flex:1}
+  .hint{font-size:11.5px; color:var(--dim); margin-top:4px; line-height:1.45}
+  .scaleRow{display:flex; align-items:center; gap:10px}
+  .scaleRow input[type="range"]{flex:1; accent-color:var(--primary); padding:0}
+  .scaleRow .val{width:44px; text-align:right; color:var(--accent); font-weight:600}
+  .rowbtns{display:flex; gap:8px; margin-top:16px}
+  .rowbtns .sp{flex:1}
+
+  /* ===== 底部状态 ===== */
+  footer{padding:9px 18px; border-top:1px solid var(--line); display:flex; align-items:center; gap:14px; flex-wrap:wrap; font-size:12.5px; color:var(--dim); background:rgba(10,20,40,.5)}
+  footer b{color:var(--accent); font-weight:600}
+  footer .dot{width:6px; height:6px; border-radius:50%; background:var(--ok); box-shadow:0 0 6px var(--ok)}
+  footer .sp{flex:1}
+
+  /* ===== 恢复提示条 ===== */
+  #restoreBar{display:none; align-items:center; gap:10px; padding:9px 18px; background:rgba(251,191,36,.1); border-bottom:1px solid rgba(251,191,36,.35); font-size:13px; color:var(--warn)}
+  #restoreBar.show{display:flex}
+  #restoreBar .sp{flex:1}
+
+  /* ===== 弹层 ===== */
+  .mask{position:fixed; inset:0; background:rgba(3,6,14,.72); display:none; align-items:center; justify-content:center; padding:18px; z-index:50}
+  .mask.show{display:flex}
+  .sheet{
+    width:min(620px, 100%); max-height:86vh; display:flex; flex-direction:column;
+    background:var(--panel); border:1px solid var(--line); border-radius:16px; box-shadow:0 24px 70px rgba(0,0,0,.5); overflow:hidden;
+  }
+  .sheet .sh{padding:14px 18px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:10px}
+  .sheet .sh h2{font-size:15.5px; font-weight:700; flex:1}
+  .sheet .sh .x{padding:5px 9px; border-radius:7px; color:var(--dim)}
+  .sheet .sh .x:hover{color:var(--text); background:rgba(255,255,255,.08)}
+  .sheet .sb{padding:14px 18px; overflow-y:auto}
+  .sheet .sf{padding:12px 18px; border-top:1px solid var(--line); display:flex; gap:9px; justify-content:flex-end; flex-wrap:wrap}
+  .sheet .sf .sp{flex:1}
+  .shLabel{font-size:12px; color:var(--dim); margin:12px 0 6px}
+  .shLabel:first-child{margin-top:0}
+  textarea.batch{min-height:150px; font-family:ui-monospace,Consolas,"Courier New",monospace; font-size:12.5px; line-height:1.6; resize:vertical}
+  .preview{border:1px solid var(--line); border-radius:10px; max-height:180px; overflow-y:auto; font-size:12.5px}
+  .preview .prow{padding:6px 12px; display:flex; gap:8px; border-bottom:1px solid rgba(120,160,255,.08)}
+  .preview .prow:last-child{border-bottom:none}
+  .preview .prow .ok{color:var(--ok)}
+  .preview .prow .err{color:var(--bad)}
+  .preview .prow .warn{color:var(--warn)}
+  .preview .prow .n{flex:none; color:var(--dim); width:22px}
+  .selFieldRow{display:flex; gap:9px; flex-wrap:wrap}
+  .selFieldRow select{flex:1; min-width:140px}
+  .selFieldRow input{flex:2; min-width:200px}
+
+  /* ===== toast ===== */
+  #toasts{position:fixed; right:16px; bottom:16px; display:flex; flex-direction:column; gap:8px; z-index:80; pointer-events:none}
+  .toast{padding:9px 14px; border-radius:10px; background:var(--panel2); border:1px solid var(--line); font-size:13px; box-shadow:0 10px 30px rgba(0,0,0,.4); max-width:320px; animation:tin .25s ease}
+  .toast.ok{border-color:rgba(74,222,128,.5)}
+  .toast.bad{border-color:rgba(255,107,122,.55)}
+  .toast.warn{border-color:rgba(251,191,36,.5)}
+  @keyframes tin{from{opacity:0; transform:translateY(8px)}to{opacity:1; transform:none}}
+
+  @media (max-width: 820px){
+    main{grid-template-columns:1fr; padding:10px}
+    #list{max-height:38vh}
+    .grid{grid-template-columns:1fr}
+    .item .mini{opacity:1}
+    header{padding:10px 12px; gap:8px}
+    .hgroup{width:100%}
+    input, select, textarea{font-size:16px}
+    textarea.batch{font-size:16px}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <svg class="star" viewBox="0 0 24 24"><path fill="#4d8dff" d="M12 2l2.6 6.6L21 11l-6.4 2.4L12 20l-2.6-6.6L3 11l6.4-2.4z"/></svg>
+    <div>
+      <h1>班级之星 · 人员录入工具</h1>
+      <div class="sub">编辑 Stars.json 的配套工作台 · 导出后放回班级之星目录即可使用</div>
+    </div>
+  </div>
+  <div class="hgroup">
+    <button class="btn" id="btnNew" title="清空当前数据，从空工作区开始">
+      <svg class="ico" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z"/></svg>新建
+    </button>
+    <button class="btn primary" id="btnOpen" title="打开已有的 JSON 文件（兼容 // 注释）">
+      <svg class="ico" viewBox="0 0 24 24"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm8 1.5V8h4.5L14 3.5zM8 13h8v-2H8zm0 4h8v-2H8z"/></svg>打开 JSON
+    </button>
+    <button class="btn" id="btnExport" title="导出全部人员为 Stars.json">
+      <svg class="ico" viewBox="0 0 24 24"><path d="M13 3h-2v10.2l-3.6-3.6L5.8 11.2 12 17.4l6.2-6.2-1.6-1.6L13 13.2zM5 19h14v2H5z"/></svg>导出 Stars.json
+    </button>
+    <button class="btn" id="btnExportSel" title="仅导出勾选的人员">
+      <svg class="ico" viewBox="0 0 24 24"><path d="M13 3h-2v10.2l-3.6-3.6L5.8 11.2 12 17.4l6.2-6.2-1.6-1.6L13 13.2zM5 19h14v2H5z"/></svg>导出选中
+    </button>
+    <button class="btn" id="btnCopySel" title="复制勾选人员的 JSON 到剪贴板">
+      <svg class="ico" viewBox="0 0 24 24"><path d="M7 6V3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-3v3a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h3zm2 0h6v11h2V4H9v2z"/></svg>复制选中
+    </button>
+  </div>
+  <input type="file" id="fileInput" accept=".json,.txt,.js,application/json,text/plain">
+</header>
+
+<div id="restoreBar">
+  <svg class="ico" viewBox="0 0 24 24" style="fill:var(--warn)"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm-1 4h2v7h-2zm0 9h2v2h-2z"/></svg>
+  <span id="restoreMsg"></span>
+  <span class="sp"></span>
+  <button class="btn small" id="btnKeepDraft">保留</button>
+  <button class="btn small" id="btnDropDraft">放弃草稿</button>
+</div>
+
+<main>
+  <section class="col" id="listCol">
+    <div class="searchbar">
+      <div class="wrap">
+        <svg viewBox="0 0 24 24"><path d="M9.5 3a6.5 6.5 0 0 1 5.2 10.5L20 19l-1.4 1.4-5.3-5.3A6.5 6.5 0 1 1 9.5 3zm0 2a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9z"/></svg>
+        <input id="search" type="text" placeholder="搜索姓名 / 职务 / 爱好 / 备注…" autocomplete="off">
+      </div>
+      <button class="btn small" id="btnClearQ" title="清空搜索">清空</button>
+    </div>
+    <div id="listMeta"></div>
+    <div id="list"></div>
+    <div class="batchbar">
+      <button class="btn small" id="btnAll">全选</button>
+      <button class="btn small" id="btnInvert">反选</button>
+      <span class="sp"></span>
+      <button class="btn small" id="btnBatchEdit" title="批量修改勾选或当前搜索结果的人员">批量修改</button>
+      <button class="btn small" id="btnBatchAdd" title="按格式粘贴多行人员信息批量添加">批量添加</button>
+      <button class="btn small danger" id="btnDelSel">删除选中</button>
+      <span class="count" id="selCount"></span>
+    </div>
+  </section>
+
+  <section class="col" id="editCol">
+    <div class="editEmpty" id="editEmpty">
+      <svg viewBox="0 0 24 24"><path d="M12 2l2.6 6.6L21 11l-6.4 2.4L12 20l-2.6-6.6L3 11l6.4-2.4z"/></svg>
+      <div class="t1">从左侧选择一名成员开始编辑</div>
+      <div style="font-size:12px">或点击顶部「打开 JSON」载入班级之星的 Stars.json</div>
+    </div>
+    <div id="editArea" style="display:none; flex-direction:column; min-height:0; flex:1">
+      <div class="editHead">
+        <div class="ap" id="apBig"></div>
+        <div class="who">
+          <div class="nm" id="whoName"></div>
+          <div class="rl" id="whoRole"></div>
+        </div>
+        <div class="ops">
+          <button class="btn small danger" id="btnDelOne" title="删除当前成员">删除</button>
+          <button class="btn small" id="btnCopyOne" title="复制当前成员的 JSON">复制</button>
+        </div>
+      </div>
+      <div id="editBody"></div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <span class="dot"></span>
+  <span id="footStat"></span>
+  <span class="sp"></span>
+  <span id="footDraft"></span>
+</footer>
+
+<!-- ===== 弹层：批量修改 ===== -->
+<div class="mask" id="mBatchEdit">
+  <div class="sheet">
+    <div class="sh">
+      <h2>批量修改</h2>
+      <button class="x" data-close="mBatchEdit" aria-label="关闭"><svg class="ico" viewBox="0 0 24 24"><path d="M6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12 19 6.4 17.6 5 12 10.6z"/></svg></button>
+    </div>
+    <div class="sb">
+      <div class="shLabel">选择要修改的字段与目标值（应用于勾选的人员）</div>
+      <div class="selFieldRow">
+        <select id="beField"></select>
+        <input id="beValue" type="text" placeholder="输入新的值">
+      </div>
+      <div class="shLabel">应用于</div>
+      <div class="selFieldRow">
+        <select id="beTarget">
+          <option value="sel">仅勾选的 N 人</option>
+          <option value="filter">当前搜索结果的 M 人</option>
+          <option value="all">全部人员</option>
+        </select>
+      </div>
+      <div class="hint" id="beHint"></div>
+    </div>
+    <div class="sf">
+      <span class="sp"></span>
+      <button class="btn" data-close="mBatchEdit">取消</button>
+      <button class="btn primary" id="beApply">应用修改</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 弹层：批量添加 ===== -->
+<div class="mask" id="mBatchAdd">
+  <div class="sheet">
+    <div class="sh">
+      <h2>批量添加</h2>
+      <button class="x" data-close="mBatchAdd" aria-label="关闭"><svg class="ico" viewBox="0 0 24 24"><path d="M6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12 19 6.4 17.6 5 12 10.6z"/></svg></button>
+    </div>
+    <div class="sb">
+      <div class="shLabel">粘贴人员信息（可直接粘贴班级群接龙原文，支持多行与序号）</div>
+      <div class="selFieldRow">
+        <select id="baMode">
+          <option value="auto" selected>自动识别（推荐）</option>
+          <option value="smart">逗号智能解析</option>
+          <option value="strict">严格逗号分割</option>
+        </select>
+        <div class="hint" id="baModeHint" style="flex:2">自动识别：分号；或竖线|精确分隔（座右铭含逗号也不会乱），旧逗号格式自动走智能解析</div>
+      </div>
+      <textarea id="baText" class="batch" placeholder="例：
+1. 王钟缘成；文娱委员；男；2014-05-14；编程；有理走遍天下；；
+2. 陈欣怡；副班长；数学课代表；女；2014.08.25；跳舞；世事洞明皆学问，人情练达即文章。
+（也支持 | 分隔；逗号格式会自动智能识别）"></textarea>
+      <div class="shLabel">解析预览</div>
+      <div class="preview" id="baPrev"></div>
+    </div>
+    <div class="sf">
+      <span class="sp"></span>
+      <button class="btn" data-close="mBatchAdd">取消</button>
+      <button class="btn primary" id="baApply">添加</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 弹层：导入确认 ===== -->
+<div class="mask" id="mImport">
+  <div class="sheet" style="width:min(460px,100%)">
+    <div class="sh">
+      <h2>导入文件</h2>
+      <button class="x" data-close="mImport" aria-label="关闭"><svg class="ico" viewBox="0 0 24 24"><path d="M6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12 19 6.4 17.6 5 12 10.6z"/></svg></button>
+    </div>
+    <div class="sb">
+      <div id="impMsg" style="font-size:13.5px"></div>
+    </div>
+    <div class="sf">
+      <span class="sp"></span>
+      <button class="btn" data-close="mImport">取消</button>
+      <button class="btn" id="impAppend">追加导入</button>
+      <button class="btn primary" id="impReplace">替换当前数据</button>
+    </div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+'use strict';
+/* ================================================================
+   班级之星 · 人员录入工具
+   数据模型与 Stars.json 完全一致：
+   name(必填) avatar role gender birthday hobby motto note color scale
+   导出的 JSON 数组可直接替换班级之星目录下的 Stars.json 使用。
+   ================================================================ */
+
+/* ---------- 常量与状态 ---------- */
+const FIELDS = [
+  { key:'name',     label:'姓名',  type:'text',  req:true },
+  { key:'avatar',   label:'头像',  type:'avatar' },
+  { key:'role',     label:'职务',  type:'text' },
+  { key:'gender',   label:'性别',  type:'select', opts:['','男','女'] },
+  { key:'birthday', label:'生日',  type:'text',  ph:'如 2014-05-14' },
+  { key:'hobby',    label:'爱好',  type:'text' },
+  { key:'motto',    label:'座右铭',type:'text' },
+  { key:'note',     label:'备注',  type:'text' },
+  { key:'color',    label:'星星颜色', type:'color' },
+  { key:'scale',    label:'大小比例', type:'scale' }
+];
+const EXPORT_KEYS = ['name','avatar','role','gender','birthday','hobby','motto','note','color','scale'];
+const DRAFT_KEY = 'classstars-editor-draft-v1';
+
+let uidSeq = 1;
+const state = {
+  list: [],              // [{...fields, _uid}]
+  sel: new Set(),        // _uid 集合
+  query: '',
+  editUid: null,
+  srcName: 'Stars.json', // 当前打开的文件名（仅展示）
+  dirty: false
+};
+const $ = id => document.getElementById(id);
+const el = (tag, cls, html) => { const n = document.createElement(tag); if (cls) n.className = cls; if (html != null) n.innerHTML = html; return n; };
+
+/* ---------- 工具函数 ---------- */
+function uid(){ return ++uidSeq; }
+function num(v, d){ const n = parseFloat(v); return isFinite(n) ? n : d; }
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function toast(msg, kind){
+  const t = el('div', 'toast ' + (kind || ''), esc(msg));
+  $('toasts').appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity .3s'; setTimeout(() => t.remove(), 320); }, 2600);
+}
+function saveDraft(){
+  try{
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({
+      list: state.list.map(p => { const c = {}; for (const k of EXPORT_KEYS) if (p[k] != null && p[k] !== '') c[k] = p[k]; c._uid = p._uid; return c; }),
+      src: state.srcName, ts: Date.now()
+    }));
+    $('footDraft').textContent = '草稿已自动保存 ' + new Date().toLocaleTimeString('zh-CN', {hour:'2-digit',minute:'2-digit'});
+  }catch(e){ /* 存储不可用时静默降级 */ }
+}
+let saveTimer = null;
+function markDirty(){
+  state.dirty = true;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveDraft, 400);
+}
+function clearDraft(){ try{ localStorage.removeItem(DRAFT_KEY); }catch(e){} $('footDraft').textContent = ''; }
+
+/* ---------- JSON 解析（兼容行注释与块注释） ---------- */
+function stripJsonComments(src){
+  let out = '', i = 0, n = src.length, mode = null; // mode: 'str'|'line'|'block'
+  while (i < n){
+    const c = src[i], nx = src[i + 1];
+    if (mode === 'line'){ if (c === '\n' || c === '\r'){ mode = null; out += c; } i++; continue; }
+    if (mode === 'block'){ if (c === '*' && nx === '/'){ mode = null; i += 2; } else i++; continue; }
+    if (mode === 'str'){
+      out += c;
+      if (c === '\\'){ out += nx != null ? nx : ''; i += 2; continue; }
+      if (c === '"') mode = null;
+      i++; continue;
+    }
+    if (c === '"'){ mode = 'str'; out += c; i++; continue; }
+    if (c === '/' && nx === '/'){ mode = 'line'; i += 2; continue; }
+    if (c === '/' && nx === '*'){ mode = 'block'; i += 2; continue; }
+    out += c; i++;
+  }
+  return out;
+}
+function parseJsonText(src){
+  if (typeof src !== 'string' || !src.trim()) throw new Error('文件内容为空');
+  let data;
+  try{ data = JSON.parse(src); }
+  catch(e1){
+    try{ data = JSON.parse(stripJsonComments(src)); }
+    catch(e2){
+      const m = /position (\d+)/.exec(e2.message);
+      throw new Error('JSON 解析失败' + (m ? '（约第 ' + (+m[1]) + ' 个字符附近）' : '') + '，请检查格式');
+    }
+  }
+  return data;
+}
+
+/* ---------- 数据操作 ---------- */
+function findUid(u){ return state.list.findIndex(p => p._uid === u); }
+function setField(u, key, val){
+  const i = findUid(u); if (i < 0) return;
+  if (key === 'scale'){ const n = num(val, 1); state.list[i].scale = (n < 0.4 ? 0.4 : n > 2 ? 2 : n); }
+  else if (key === 'name'){ state.list[i].name = val; }
+  else state.list[i][key] = val;
+  markDirty();
+}
+function filtered(){
+  const q = state.query.trim().toLowerCase();
+  if (!q) return state.list;
+  return state.list.filter(p => {
+    const hay = FIELDS.map(f => p[f.key]).filter(v => v != null).join(' ');
+    return hay.toLowerCase().includes(q);
+  });
+}
+function visibleSel(){
+  const vis = new Set(filtered().map(p => p._uid));
+  return [...state.sel].filter(u => vis.has(u));
+}
+function buildExport(rows){
+  return rows.map(p => {
+    const o = {};
+    for (const k of EXPORT_KEYS) if (p[k] != null && p[k] !== '') o[k] = p[k];
+    return o;
+  });
+}
+
+/* ---------- 渲染：列表 ---------- */
+function renderList(){
+  const box = $('list');
+  const rows = filtered();
+  box.innerHTML = '';
+  const meta = $('listMeta');
+  if (!rows.length){
+    meta.innerHTML = state.list.length
+      ? '共 ' + state.list.length + ' 人 · 没有匹配「' + esc(state.query) + '」的结果'
+      : '共 0 人 · 点击上方「打开 JSON」载入数据';
+    box.appendChild(el('div', 'empty',
+      '<svg viewBox="0 0 24 24"><path d="M12 2l2.6 6.6L21 11l-6.4 2.4L12 20l-2.6-6.6L3 11l6.4-2.4z"/></svg>' +
+      '<div>' + (state.list.length ? '没有匹配的结果' : '暂无成员数据') + '</div>'));
+    renderFooter(); return;
+  }
+  meta.innerHTML = '共 <b>' + state.list.length + '</b> 人' +
+    (state.query ? ' · 匹配 <b>' + rows.length + '</b> 人' : '');
+  const frag = document.createDocumentFragment();
+  for (const p of rows){
+    const isSel = p._uid === state.editUid;
+    const isChk = state.sel.has(p._uid);
+    const roleTxt = p.role || '普通成员';
+    const col = p.color || '#4d8dff';
+    const item = el('div', 'item' + (isSel ? ' sel' : '') + (isChk ? ' checked' : ''));
+    item.dataset.uid = p._uid;
+    item.innerHTML =
+      '<span class="chk" data-act="chk" title="勾选/取消" aria-label="勾选">' +
+        '<svg viewBox="0 0 24 24"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg></span>' +
+      '<svg class="star" data-act="sel" viewBox="0 0 24 24" style="fill:' + esc(col) + '">' +
+        '<path d="M12 2l2.6 6.6L21 11l-6.4 2.4L12 20l-2.6-6.6L3 11l6.4-2.4z"/></svg>' +
+      '<span class="meta" data-act="sel">' +
+        '<div class="nm">' + esc(p.name || '（未命名）') + '</div>' +
+        '<div class="rl">' + esc(roleTxt) + '</div></span>' +
+      '<span class="mini">' +
+        '<button class="copy" data-act="copy" title="复制此人 JSON" aria-label="复制">' +
+          '<svg class="ico" viewBox="0 0 24 24"><path d="M7 6V3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-3v3a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h3zm2 0h6v11h2V4H9v2z"/></svg></button>' +
+        '<button class="del" data-act="delone" title="删除此人" aria-label="删除">' +
+          '<svg class="ico" viewBox="0 0 24 24"><path d="M6 7h12v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1zM9 3h6l1 2h4v2H4V5h4zm1 7v7h2v-7zm4 0v7h2v-7z"/></svg></button></span>';
+    frag.appendChild(item);
+  }
+  box.appendChild(frag);
+  renderFooter();
+}
+
+/* ---------- 渲染：编辑区 ---------- */
+function fieldHtml(f, p){
+  const v = p[f.key];
+  if (f.type === 'select'){
+    const opts = f.opts.map(o => '<option value="' + esc(o) + '"' + (o === v ? ' selected' : '') + '>' + esc(o || '（未设置）') + '</option>').join('');
+    return '<select data-k="' + f.key + '">' + opts + '</select>';
+  }
+  if (f.type === 'color'){
+    return '<input type="color" data-k="' + f.key + '" value="' + esc(/^#[0-9a-fA-F]{6}$/.test(v || '') ? v : '#4d8dff') + '">' +
+      '<button class="btn small" data-act="resetColor" style="margin-left:6px" title="恢复默认蓝色">默认</button>';
+  }
+  if (f.type === 'scale'){
+    const sv = num(v, 1);
+    return '<div class="scaleRow">' +
+      '<input type="range" data-k="' + f.key + '" min="0.4" max="2" step="0.05" value="' + sv + '">' +
+      '<span class="val" data-scale-val>' + sv.toFixed(2) + '</span></div>';
+  }
+  return '<input type="text" data-k="' + f.key + '" value="' + esc(v || '') + '"' +
+    (f.ph ? ' placeholder="' + esc(f.ph) + '"' : '') + '>';
+}
+function updateAvatarDisplays(p){
+  const showN = (box, name) => { box.innerHTML = ''; box.appendChild(document.createTextNode((name || '星')[0])); };
+  const ap = $('apBig');
+  if (p.avatar){
+    const img = document.createElement('img');
+    img.src = p.avatar;
+    img.onerror = () => showN(ap, p.name);
+    img.onload = () => { ap.innerHTML = ''; ap.appendChild(img); };
+  } else showN(ap, p.name);
+  const apSm = $('editBody').querySelector('.ap-sm');
+  if (apSm){
+    if (p.avatar){
+      const img = document.createElement('img');
+      img.src = p.avatar;
+      img.onerror = () => showN(apSm, p.name);
+      img.onload = () => { apSm.innerHTML = ''; apSm.appendChild(img); };
+    } else showN(apSm, p.name);
+  }
+}
+function renderEditor(){
+  const area = $('editArea'), empty = $('editEmpty');
+  const u = state.editUid;
+  if (u == null || findUid(u) < 0){
+    area.style.display = 'none'; empty.style.display = 'flex';
+    return;
+  }
+  empty.style.display = 'none'; area.style.display = 'flex';
+  const p = state.list[findUid(u)];
+  $('whoName').textContent = p.name || '（未命名）';
+  $('whoRole').textContent = p.role || '普通成员';
+  // 表单
+  const body = $('editBody');
+  body.innerHTML = '';
+  const grid = el('div', 'grid');
+  for (const f of FIELDS){
+    if (f.type === 'avatar'){
+      const row = el('div', 'avatarRow fld full');
+      row.innerHTML = '<label>头像</label>';
+      const apSm = el('div', 'ap-sm');
+      const w = el('div', 'w');
+      const inp = document.createElement('input');
+      inp.type = 'text'; inp.dataset.k = 'avatar'; inp.value = p.avatar || '';
+      inp.placeholder = '网络地址 或 同目录相对路径（如 avatars/avatar-01.jpg）';
+      const hint = el('div', 'hint', '网络图片地址（http/https）或与 index.html 同目录的相对路径；留空则显示姓名首字占位');
+      w.appendChild(inp); w.appendChild(hint);
+      row.appendChild(apSm); row.appendChild(w);
+      grid.appendChild(row);
+      continue;
+    }
+    const box = el('div', 'fld' + (f.req ? ' req' : ''));
+    box.innerHTML = '<label>' + f.label + '</label>' + fieldHtml(f, p);
+    grid.appendChild(box);
+  }
+  body.appendChild(grid);
+  const btns = el('div', 'rowbtns');
+  btns.appendChild(el('div', 'sp'));
+  btns.appendChild(el('button', 'btn danger', '删除此人')).onclick = () => delPerson(u);
+  btns.appendChild(el('button', 'btn', '复制此人 JSON')).onclick = () => copyRows([p]);
+  body.appendChild(btns);
+  updateAvatarDisplays(p);
+}
+
+/* ---------- 渲染：底部统计 ---------- */
+function renderFooter(){
+  $('footStat').innerHTML = '共 <b>' + state.list.length + '</b> 人 · 已勾选 <b>' + state.sel.size + '</b> 人 · 当前来源：' + esc(state.srcName);
+  $('selCount').textContent = state.sel.size ? '已选 ' + state.sel.size : '';
+}
+
+/* ---------- 渲染：批量修改字段下拉 ---------- */
+function renderBeFields(){
+  $('beField').innerHTML = FIELDS.map(f => '<option value="' + f.key + '">' + f.label + '</option>').join('');
+}
+
+/* ===== 通用确认条 ===== */
+let confirmResolve = null;
+function askConfirm(msg, fn){
+  const bar = $('confirmbar');
+  if (!bar){
+    const b = el('div', 'confirmbar'); b.id = 'confirmbar';
+    b.innerHTML = '<span class="msg"></span><button class="btn small" data-c="no">取消</button><button class="btn small danger" data-c="yes">确认</button>';
+    b.querySelector('[data-c="no"]').onclick = () => { b.remove(); if (confirmResolve) confirmResolve(false); };
+    b.querySelector('[data-c="yes"]').onclick = () => { b.remove(); if (confirmResolve) confirmResolve(true); };
+    $('listCol').appendChild(b);
+  }
+  const b = $('confirmbar');
+  b.querySelector('.msg').textContent = msg;
+  b.style.display = 'flex';
+  return new Promise(res => {
+    confirmResolve = res;
+    b.querySelector('[data-c="yes"]').onclick = () => { b.remove(); confirmResolve = null; res(true); };
+    b.querySelector('[data-c="no"]').onclick = () => { b.remove(); confirmResolve = null; res(false); };
+  });
+}
+
+/* ---------- 单条操作 ---------- */
+function toggleSel(u){ state.sel.has(u) ? state.sel.delete(u) : state.sel.add(u); renderList(); }
+function selectEdit(u){ state.editUid = u; renderList(); renderEditor(); }
+async function delPerson(u){
+  const p = state.list[findUid(u)];
+  if (!p) return;
+  if (!await askConfirm('确定删除「' + (p.name || '未命名') + '」？')) return;
+  state.list.splice(findUid(u), 1);
+  state.sel.delete(u);
+  if (state.editUid === u) state.editUid = null;
+  markDirty(); renderList(); renderEditor();
+  toast('已删除「' + (p.name || '未命名') + '」');
+}
+async function copyRows(rows){
+  const text = JSON.stringify(buildExport(rows), null, 2);
+  try{
+    await navigator.clipboard.writeText(text);
+    toast('已复制 ' + rows.length + ' 人 JSON');
+  }catch(e){
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); toast('已复制 ' + rows.length + ' 人 JSON'); }
+    catch(e2){ toast('复制失败，请手动选择导出', 'warn'); }
+    ta.remove();
+  }
+}
+
+/* ---------- 批量添加 ---------- */
+const BA_KEYS = ['name','role','gender','birthday','hobby','motto','note','avatar'];
+const GENDER_SET = ['男','女','男生','女生'];
+const DATE_RE = /^(\d{4})[-\/.年](\d{1,2})[-\/.月](\d{1,2})日?$/;
+const AVATAR_URL_RE = /^(https?:\/\/|data:|\.{0,2}\/)/i;
+const AVATAR_PIC_RE = /\.(jpe?g|png|gif|webp|bmp|svg|avif)$/i;
+const END_PUNCT_RE = /[。！？!?…]$/;
+function parseStrict(text){
+  const rows = [], errs = [], names = new Set(state.list.map(p => p.name).filter(Boolean));
+  const lines = text.split(/\r?\n/);
+  lines.forEach((raw, li) => {
+    const line = raw.trim();
+    if (!line) return;
+    const parts = line.split(/[,，]/).map(s => s.trim());
+    const p = {};
+    BA_KEYS.forEach((k, i) => { p[k] = parts[i] != null ? parts[i] : ''; });
+    if (!p.name){ errs.push({ line: li + 1, msg: '姓名为空，已跳过' }); return; }
+    if (names.has(p.name)){ rows.push({ ...p, dup: true }); }
+    else { names.add(p.name); rows.push(p); }
+  });
+  return { rows, errs };
+}
+/* 接龙智能解析：
+   ① 姓名 = 行首第一个逗号前；
+   ② 性别 = 精确匹配 男/女 的段（避免"全班最帅的男人"被误判）；
+   ③ 生日 = 性别之后的日期段；
+   ④ 职务 = 性别之前的其余段（多个职务自动合并）；
+   ⑤ 剩余段按 爱好→座右铭→备注→头像 分配：座右铭含逗号拆开的段会自动合并，
+      备注段以句末标点结尾时并入座右铭，末尾图片地址识别为头像；
+   ⑥ 一条接龙被换行拆成两行时（上一行以逗号结尾且解析失败）自动合并续行。 */
+function smartParse(text){
+  const lines = text.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  return walkLines(lines, commaParseOne);
+}
+/* 单行逗号锚点解析（智能模式 / 自动模式回退分支共用） */
+function commaParseOne(raw){
+  let line = raw.replace(/^\s*\d+\s*[.、．)）:：]\s*/, '').trim();
+  if (!line) return { ok: false, msg: '内容为空' };
+  const toks = line.split(/[,，]/).map(s => s.trim());
+  const p = {};
+  p.name = (toks.shift() || '').trim().replace(/[。.]$/, '');
+  const gi = toks.findIndex(t => GENDER_SET.includes(t));
+  if (gi < 0) return { ok: false, msg: '未识别到性别（男/女），已跳过' };
+  p.role = toks.slice(0, gi).join('，');
+  toks.splice(0, gi);
+  p.gender = toks.shift() || '';
+  const di = toks.findIndex(t => DATE_RE.test(t));
+  if (di < 0) return { ok: false, msg: '未识别到生日（如 2014-05-14），已跳过' };
+  p.birthday = toks.splice(di, 1)[0];
+  toks.splice(0, di);
+  const rest = toks.filter(Boolean);
+  let avatar = '';
+  if (rest.length){
+    const last = rest[rest.length - 1];
+    if (AVATAR_URL_RE.test(last) || AVATAR_PIC_RE.test(last)) avatar = rest.pop();
+  }
+  p.hobby = ''; p.motto = ''; p.note = ''; p.avatar = avatar;
+  if (rest.length === 1){ p.hobby = rest[0]; }
+  else if (rest.length === 2){ p.hobby = rest[0]; p.motto = rest[1]; }
+  else if (rest.length === 3){
+    p.hobby = rest[0]; p.motto = rest[1]; p.note = rest[2];
+    if (END_PUNCT_RE.test(p.note)){ p.motto += '，' + p.note; p.note = ''; }
+  } else if (rest.length > 3){
+    p.hobby = rest[0];
+    p.motto = rest.slice(1, -1).join('，');
+    p.note = rest[rest.length - 1];
+  }
+  return { ok: true, p };
+}
+/* 自动模式：一行内分号/竖线 ≥3 个 → 按分号精确解析（座右铭含逗号不受影响）；
+   否则回退逗号锚点智能解析。 */
+function autoParseOne(raw){
+  let line = raw.replace(/^\s*\d+\s*[.、．)）:：]\s*/, '').trim();
+  if (!line) return { ok: false, msg: '内容为空' };
+  const sepN = (line.match(/[;；|]/g) || []).length;
+  if (sepN >= 3){
+    const parts = line.split(/[;；|]/).map(s => s.trim());
+    const p = {};
+    BA_KEYS.forEach((k, i) => { p[k] = parts[i] != null ? parts[i] : ''; });
+    if (p.name) p.name = p.name.replace(/[。.]$/, '');
+    if (!p.name) return { ok: false, msg: '姓名为空，已跳过' };
+    return { ok: true, p };
+  }
+  return commaParseOne(line);
+}
+/* 公共遍历：解析失败且行尾是分隔符时，与下一行合并重试（处理微信换行拆断） */
+function walkLines(lines, parseOne){
+  const rows = [], errs = [], names = new Set(state.list.map(p => p.name).filter(Boolean));
+  let i = 0;
+  while (i < lines.length){
+    let line = lines[i];
+    let r = parseOne(line);
+    if (!r.ok && /[,，;；|]$/.test(line) && i + 1 < lines.length && !/^\s*\d+\s*[.、．)）:：]/.test(lines[i + 1])){
+      line += lines[i + 1]; i++;
+      r = parseOne(line);
+    }
+    const show = '「' + (line.length > 14 ? line.slice(0, 14) + '…' : line) + '」';
+    if (!r.ok){ errs.push({ line: i + 1, msg: show + r.msg }); i++; continue; }
+    const p = r.p;
+    if (!p.name){ errs.push({ line: i + 1, msg: show + '姓名为空，已跳过' }); i++; continue; }
+    if (names.has(p.name)){ rows.push({ ...p, dup: true }); }
+    else { names.add(p.name); rows.push(p); }
+    i++;
+  }
+  return { rows, errs };
+}
+function parseBatch(text){
+  const m = $('baMode').value;
+  if (m === 'auto') return walkLines(text.split(/\r?\n/).map(s => s.trim()).filter(Boolean), autoParseOne);
+  if (m === 'smart') return smartParse(text);
+  return parseStrict(text);
+}
+function renderBatchPreview(){
+  const text = $('baText').value;
+  const { rows, errs } = parseBatch(text);
+  const box = $('baPrev');
+  box.innerHTML = '';
+  const dupCount = rows.filter(r => r.dup).length;
+  const frag = document.createDocumentFragment();
+  rows.forEach((r, i) => {
+    const parts = [r.role, r.gender, r.birthday, r.hobby, r.motto, r.note, r.avatar].filter(Boolean);
+    frag.appendChild(el('div', 'prow' + (r.dup ? ' warn' : ' ok'),
+      '<span class="n">' + (i + 1) + '</span><b>' + esc(r.name) + '</b>' +
+      (parts.length ? ' · ' + esc(parts.join(' · ')) : '') +
+      (r.dup ? ' <span class="warn">（与现有姓名重复，将一并添加）</span>' : '')));
+  });
+  errs.forEach(e => frag.appendChild(el('div', 'prow err',
+    '<span class="n">L' + e.line + '</span><span>' + esc(e.msg) + '</span>')));
+  box.appendChild(frag);
+  if (!rows.length && !errs.length) box.innerHTML = '<div class="prow" style="color:var(--dim)">等待输入…</div>';
+  $('baApply').disabled = !rows.length;
+  $('baApply').textContent = '添加 ' + rows.length + ' 人' + (errs.length ? '（跳过 ' + errs.length + ' 行）' : '');
+}
+
+/* ---------- 批量修改 ---------- */
+function batchTargetRows(){
+  const t = $('beTarget').value;
+  if (t === 'all') return state.list;
+  if (t === 'filter') return filtered();
+  return state.list.filter(p => state.sel.has(p._uid));
+}
+function openBatchEdit(){
+  const selN = state.sel.size, filN = filtered().length, allN = state.list.length;
+  if (!allN){ toast('当前没有可编辑的数据', 'warn'); return; }
+  $('beTarget').options[0].text = '仅勾选的 ' + selN + ' 人';
+  $('beTarget').options[1].text = '当前搜索结果的 ' + filN + ' 人';
+  $('beTarget').options[2].text = '全部 ' + allN + ' 人';
+  const f = FIELDS.find(x => x.key === $('beField').value);
+  $('beValue').value = '';
+  $('beHint').textContent = f.key === 'scale' ? '填写 0.4 ~ 2 之间的数字（超出自动夹取）' :
+    f.key === 'gender' ? '填写：男 / 女 / 留空' :
+    f.key === 'color' ? '填写 #rrggbb 颜色值，留空恢复默认蓝' : '留空表示清空该字段';
+  openMask('mBatchEdit');
+}
+
+/* ---------- 弹层控制 ---------- */
+function openMask(id){ $(id).classList.add('show'); }
+function closeMask(id){ $(id).classList.remove('show'); }
+function closeAllMasks(){ document.querySelectorAll('.mask.show').forEach(m => m.classList.remove('show')); }
+
+/* ---------- 导入 / 打开 ---------- */
+let pendingImport = null;
+async function handleFile(file){
+  if (!file) return;
+  let data;
+  try{ data = parseJsonText(await file.text()); }
+  catch(err){
+    toast(err.message, 'bad');
+    return;
+  }
+  if (!Array.isArray(data)){
+    toast('文件内容不是人员数组（应为 [ {…}, … ]）', 'bad');
+    return;
+  }
+  const rows = data.filter(x => x && typeof x === 'object');
+  const skip = data.length - rows.length;
+  const noName = rows.filter(p => !p.name).length;
+  pendingImport = { rows, file };
+  $('impMsg').innerHTML = '文件 <b>' + esc(file.name) + '</b> 包含 <b>' + rows.length + '</b> 名成员' +
+    (skip ? '，已忽略 ' + skip + ' 个无效项' : '') +
+    (noName ? '，其中 <b style="color:var(--warn)">' + noName + '</b> 人姓名为空' : '') + '。<br><br>选择导入方式：';
+  openMask('mImport');
+}
+function doImport(append){
+  if (!pendingImport) return;
+  const { rows } = pendingImport;
+  if (append){
+    for (const p of rows){ const o = Object.assign({}, p); o._uid = uid(); state.list.push(o); }
+    toast('已追加 ' + rows.length + ' 人');
+  }else{
+    state.list = rows.map(p => Object.assign({}, p, { _uid: uid() }));
+    state.sel.clear(); state.editUid = null;
+    state.srcName = pendingImport.file.name || 'Stars.json';
+    toast('已载入 ' + rows.length + ' 人');
+  }
+  pendingImport = null;
+  markDirty(); renderList(); renderEditor();
+}
+
+/* ---------- 导出 ---------- */
+function download(filename, text, mime){
+  const blob = new Blob([text], { type: mime || 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 3000);
+}
+function exportRows(rows, filename){
+  if (!rows.length){ toast('没有可导出的数据', 'warn'); return; }
+  const noName = rows.filter(p => !p.name).length;
+  if (noName) toast('提示：' + noName + ' 人姓名为空，导出后姓名位置显示空白', 'warn');
+  download(filename, JSON.stringify(buildExport(rows), null, 2) + '\n');
+  toast('已导出 ' + rows.length + ' 人 → ' + filename);
+}
+
+/* ---------- 新建 ---------- */
+async function newWorkspace(){
+  if (state.list.length){
+    if (!await askConfirm('新建将清空当前 ' + state.list.length + ' 人（草稿会自动保存，导出文件不受影响），继续？')) return;
+  }
+  state.list = []; state.sel.clear(); state.editUid = null; state.query = ''; state.srcName = '新建工作区';
+  $('search').value = '';
+  markDirty(); renderList(); renderEditor();
+  toast('已新建空工作区');
+}
+
+/* ---------- 草稿 ---------- */
+function loadDraft(){
+  let d = null;
+  try{ d = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null'); }catch(e){}
+  if (!d || !Array.isArray(d.list)) return;
+  state.list = d.list.map(p => Object.assign({}, p, { _uid: p._uid || uid() }));
+  uidSeq = Math.max(uidSeq, ...state.list.map(p => p._uid || 0));
+  if (d.src) state.srcName = d.src;
+  const t = new Date(d.ts || Date.now());
+  $('restoreMsg').innerHTML = '检测到上次编辑的草稿（' + state.list.length + ' 人 · ' +
+    t.toLocaleTimeString('zh-CN', {hour:'2-digit',minute:'2-digit'}) + '）。';
+  $('restoreBar').classList.add('show');
+}
+
+/* ---------- 事件绑定 ---------- */
+function bindEvents(){
+  // 列表委托
+  $('list').addEventListener('click', e => {
+    const item = e.target.closest('.item');
+    if (!item) return;
+    const u = +item.dataset.uid;
+    const actEl = e.target.closest('[data-act]');
+    const act = actEl ? actEl.dataset.act : null;
+    if (act === 'chk') toggleSel(u);
+    else if (act === 'delone') delPerson(u);
+    else if (act === 'copy'){
+      const p = state.list[findUid(u)];
+      if (p) copyRows([p]);
+    }else selectEdit(u);
+  });
+  // 搜索
+  $('search').addEventListener('input', e => { state.query = e.target.value; renderList(); });
+  $('btnClearQ').onclick = () => { state.query = ''; $('search').value = ''; renderList(); };
+  // 顶栏
+  $('btnNew').onclick = newWorkspace;
+  $('btnOpen').onclick = () => $('fileInput').click();
+  $('fileInput').addEventListener('change', e => {
+    const f = e.target.files && e.target.files[0];
+    if (f) handleFile(f);
+    e.target.value = '';
+  });
+  $('btnExport').onclick = () => exportRows(state.list, 'Stars.json');
+  $('btnExportSel').onclick = () => {
+    const rows = state.list.filter(p => state.sel.has(p._uid));
+    if (!rows.length){ toast('未勾选任何人', 'warn'); return; }
+    exportRows(rows, 'Stars-selected.json');
+  };
+  $('btnCopySel').onclick = () => {
+    const rows = state.list.filter(p => state.sel.has(p._uid));
+    if (!rows.length){ toast('未勾选任何人', 'warn'); return; }
+    copyRows(rows);
+  };
+  // 批量工具条
+  $('btnAll').onclick = () => { filtered().forEach(p => state.sel.add(p._uid)); renderList(); };
+  $('btnInvert').onclick = () => { filtered().forEach(p => state.sel.has(p._uid) ? state.sel.delete(p._uid) : state.sel.add(p._uid)); renderList(); };
+  $('btnDelSel').onclick = async () => {
+    if (!state.sel.size){ toast('未勾选任何人', 'warn'); return; }
+    const n = state.sel.size;
+    if (!await askConfirm('确定删除勾选的 ' + n + ' 人？')) return;
+    const keep = state.list.filter(p => !state.sel.has(p._uid));
+    state.list = keep;
+    state.sel.clear(); state.editUid = null;
+    markDirty(); renderList(); renderEditor();
+    toast('已删除 ' + n + ' 人');
+  };
+  $('btnBatchEdit').onclick = openBatchEdit;
+  $('btnBatchAdd').onclick = () => { $('baText').value = ''; renderBatchPreview(); openMask('mBatchAdd'); };
+  // 编辑区（输入即时写回，只做局部刷新，避免重建表单丢焦点）
+  $('editBody').addEventListener('input', e => {
+    const k = e.target.dataset && e.target.dataset.k;
+    if (!k || state.editUid == null) return;
+    setField(state.editUid, k, e.target.value);
+    const p = state.list[findUid(state.editUid)];
+    if (k === 'scale'){
+      const sv = e.target.closest('.scaleRow') && e.target.closest('.scaleRow').querySelector('[data-scale-val]');
+      if (sv) sv.textContent = num(e.target.value, 1).toFixed(2);
+    } else if (k === 'name'){ $('whoName').textContent = p.name || '（未命名）'; }
+    else if (k === 'role'){ $('whoRole').textContent = p.role || '普通成员'; }
+    else if (k === 'avatar'){ updateAvatarDisplays(p); }
+    renderList();
+  });
+  $('editBody').addEventListener('click', e => {
+    const rc = e.target.closest('[data-act="resetColor"]');
+    if (rc && state.editUid != null){ setField(state.editUid, 'color', ''); renderEditor(); renderList(); }
+  });
+  $('btnDelOne').onclick = () => { if (state.editUid != null) delPerson(state.editUid); };
+  $('btnCopyOne').onclick = () => {
+    const i = state.editUid == null ? -1 : findUid(state.editUid);
+    if (i >= 0) copyRows([state.list[i]]);
+  };
+  // 批量修改弹层
+  $('beField').addEventListener('change', () => {
+    const f = FIELDS.find(x => x.key === $('beField').value);
+    $('beHint').textContent = f.key === 'scale' ? '填写 0.4 ~ 2 之间的数字（超出自动夹取）' :
+      f.key === 'gender' ? '填写：男 / 女 / 留空' :
+      f.key === 'color' ? '填写 #rrggbb 颜色值，留空恢复默认蓝' : '留空表示清空该字段';
+  });
+  $('beApply').onclick = () => {
+    const rows = batchTargetRows();
+    if (!rows.length){ toast('没有可应用的目标人员', 'warn'); return; }
+    const k = $('beField').value, v = $('beValue').value.trim();
+    for (const p of rows) setField(p._uid, k, v);
+    toast('已批量更新 ' + rows.length + ' 人的「' + (FIELDS.find(f => f.key === k) || {}).label + '」');
+    closeMask('mBatchEdit');
+    renderList(); renderEditor();
+  };
+  // 批量添加弹层
+  $('baText').addEventListener('input', renderBatchPreview);
+  $('baMode').addEventListener('change', () => {
+    const hints = {
+      auto: '自动识别：分号；或竖线|精确分隔（座右铭含逗号也不会乱），旧逗号格式自动走智能解析',
+      smart: '针对旧逗号接龙：锚点识别姓名/性别/生日，座右铭含逗号自动合并',
+      strict: '严格按逗号分割：姓名,职务,性别,生日,爱好,座右铭,备注,头像（座右铭含逗号会错位）'
+    };
+    $('baModeHint').textContent = hints[$('baMode').value];
+    renderBatchPreview();
+  });
+  $('baApply').onclick = () => {
+    const { rows, errs } = parseBatch($('baText').value);
+    if (!rows.length){ toast('没有可添加的人员（' + (errs.length ? errs.length + ' 行无效' : '内容为空') + '）', 'warn'); return; }
+    for (const r of rows){ const o = Object.assign({}, r); delete o.dup; o._uid = uid(); state.list.push(o); }
+    const dupN = rows.filter(r => r.dup).length;
+    markDirty(); renderList(); renderEditor();
+    closeMask('mBatchAdd');
+    toast('已添加 ' + rows.length + ' 人' + (dupN ? '（含 ' + dupN + ' 个重名）' : ''));
+  };
+  // 导入确认
+  $('impAppend').onclick = () => { doImport(true); closeMask('mImport'); };
+  $('impReplace').onclick = () => { doImport(false); closeMask('mImport'); };
+  // 弹层通用关闭
+  document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => closeMask(b.dataset.close)));
+  document.querySelectorAll('.mask').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.classList.remove('show'); }));
+  addEventListener('keydown', e => { if (e.key === 'Escape') closeAllMasks(); });
+  // 草稿条
+  $('btnKeepDraft').onclick = () => $('restoreBar').classList.remove('show');
+  $('btnDropDraft').onclick = () => {
+    clearDraft();
+    state.list = []; state.sel.clear(); state.editUid = null; state.srcName = '新建工作区'; state.query = '';
+    $('search').value = '';
+    $('restoreBar').classList.remove('show');
+    renderList(); renderEditor();
+    toast('已放弃草稿，开始空工作区');
+  };
+}
+
+/* ---------- 初始化 ---------- */
+function init(){
+  renderBeFields();
+  renderBatchPreview();
+  bindEvents();
+  loadDraft();
+  renderList();
+  renderEditor();
+}
+init();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,98 @@
+{
+  "_guide": "「班级之星」配置文件。本文件为标准 JSON 语法，VSCode 打开不会报错；每个键都有默认值，删掉某行即使用默认。想临时写 // 注释也可以，页面解析时会自动忽略，但 VSCode 会标红，建议把说明记在下面的 _comments 里。Stars.json 为成员数组，每个成员字段：name 姓名(必填)、avatar 头像(网络地址或同目录相对路径，留空用内置占位图)、role 职务(可空)、gender 性别、birthday 生日、hobby 爱好、motto 座右铭、note 备注、color 自定义星星颜色(可空)、scale 星星大小倍率(0.4~2)。",
+  "title": "班级之星",
+  "sphere": {
+    "radius": 10,
+    "shell": 0.88,
+    "seed": 20261019,
+    "size": 1.0,
+    "count": 0,
+    "view": "outer",
+    "minGap": 12
+  },
+  "display": {
+    "nameMode": "always",
+    "nameSize": 13,
+    "showInfo": true,
+    "infoFields": ["role", "gender", "birthday", "hobby", "motto", "note"],
+    "fieldLabels": {
+      "role": "职务",
+      "gender": "性别",
+      "birthday": "生日",
+      "hobby": "爱好",
+      "motto": "座右铭",
+      "note": "备注"
+    },
+    "showAvatar": true,
+    "hint": true
+  },
+  "avatar": {
+    "roundRatio": "1:1",
+    "panelRatio": "4:3",
+    "fallback": ""
+  },
+  "animation": {
+    "duration": 1400,
+    "focusScale": 1.5,
+    "rotateEasing": "easeInOutCubic",
+    "zoomEasing": "easeInOutCubic",
+    "shiftEasing": "easeInOutCubic"
+  },
+  "colors": {
+    "primary": "#4d8dff",
+    "glow": "rgba(77,141,255,0.28)",
+    "core": "#d6e6ff",
+    "accent": "#7fb2ff",
+    "role": "rgba(255,214,140,0.75)",
+    "background": "#03060e",
+    "panel": "rgba(7,12,26,0.92)",
+    "text": "#dce8ff",
+    "textDim": "rgba(170,190,235,0.62)",
+    "starShades": ["#4d8dff", "#6fa3ff", "#8fb9ff", "#3b78e8", "#5d97ff", "#a8c8ff"]
+  },
+  "performance": {
+    "targetFPS": 60,
+    "minFPS": 36,
+    "autoTune": true,
+    "maxDPR": 2
+  },
+  "_comments": {
+    "title": "页面标题（左上角）",
+    "sphere.radius": "球体半径（3D 单位）",
+    "sphere.shell": "星星贴近球表面的程度 0~1，越大越像一层壳",
+    "sphere.seed": "星星位置随机种子；0 表示每次刷新随机分布",
+    "sphere.size": "星星整体大小倍率",
+    "sphere.count": "只显示前 N 人；0 表示全部",
+    "sphere.view": "\"outer\"=外球，摄像机在群星球外部（默认）；\"inner\"=内球，摄像机放进球内，四周都是星星",
+    "sphere.minGap": "星星最小间隔（角度），避免靠太近导致姓名重叠；0 表示不限制",
+    "display.nameMode": "姓名显示方式：\"off\" 关闭 / \"hover\" 鼠标悬停显示 / \"always\" 常驻显示",
+    "display.nameSize": "姓名文字大小（px）",
+    "display.showInfo": "点击星星后是否显示个人 4:3 信息面板",
+    "display.infoFields": "信息面板展示的字段及顺序（取 role/gender/birthday/hobby/motto/note）",
+    "display.fieldLabels": "各字段的中文名称",
+    "display.showAvatar": "信息面板是否显示 4:3 头像",
+    "display.hint": "是否显示底部操作提示",
+    "avatar.roundRatio": "星星上圆形头像的裁剪比例（宽:高）",
+    "avatar.panelRatio": "信息面板头像比例（宽:高）",
+    "avatar.fallback": "头像加载失败时的兜底图地址；留空使用内置占位",
+    "animation.duration": "点击聚焦动画时长（毫秒）",
+    "animation.focusScale": "聚焦放大倍数（150% 即 1.5）",
+    "animation.rotateEasing": "球体旋转动画曲线（可选 easeInOutCubic / easeInOutQuint / easeOutQuint / easeOutCubic，默认柔和）",
+    "animation.zoomEasing": "缩放动画曲线",
+    "animation.shiftEasing": "星空移位/面板动画曲线（可选 easeInOutCubic / easeOutCubic / easeOutExpo，默认柔和）",
+    "colors.primary": "主色（蓝）",
+    "colors.glow": "星光光晕",
+    "colors.core": "星光核心",
+    "colors.accent": "强调色",
+    "colors.role": "有职务星星的描环",
+    "colors.background": "页面背景",
+    "colors.panel": "信息面板背景",
+    "colors.text": "主文字",
+    "colors.textDim": "次要文字",
+    "colors.starShades": "星星蓝色系渐变池",
+    "performance.targetFPS": "目标帧率",
+    "performance.minFPS": "帧率低于该值自动降画质",
+    "performance.autoTune": "是否自动调节渲染性能",
+    "performance.maxDPR": "渲染像素比上限"
+  }
+}
